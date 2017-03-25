@@ -242,7 +242,7 @@ function do_backup {
     fi
 
     #auto-update
-    wget "https://raw.githubusercontent.com/khony/backup-zbackup/master/zbackup.sh" -O /tmp/zbackup.sh
+    wget "https://raw.githubusercontent.com/khony/backup-zbackup/master/zbackup.sh" -O /tmp/zbackup.sh > /dev/null
     if [ $? -eq 0 ]; then
         chmod +x /tmp/zbackup.sh > /dev/null
         /tmp/zbackup.sh -i > /dev/null
