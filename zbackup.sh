@@ -109,7 +109,7 @@ function do_backup {
     #pre requisites
     [ -d "$dest" ] || mkdir -p $dest
     #check if already running
-    testrunning=`ps aux|grep zbackup|grep -v grep`
+    testrunning=`ps aux|grep zmbkpose|grep -v grep`
     if [ "$testrunning" == "" ];then
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Init backup $routine" > $log_file
     else
