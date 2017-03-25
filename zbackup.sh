@@ -86,9 +86,16 @@ function list_backups {
 function reset_variables {
     unset mail
     unset name
+    unset domain
     unset dest
     unset orig
+    unset before
+    unset after
+    unset history
     unset ext_ids
+    unset full
+    unset incremental
+    unset forceumount
 }
 
 function do_backup {
@@ -215,10 +222,10 @@ function do_backup {
     fi
 
     #auto-update
-    wget "https://raw.githubusercontent.com/khony/backup-rbackup/master/rbackup.sh" -O /tmp/rbackup.sh
+    wget "https://raw.githubusercontent.com/khony/backup-zbackup/master/zbackup.sh" -O /tmp/zbackup.sh
     if [ $? -eq 0 ]; then
-        chmod +x /tmp/rbackup.sh > /dev/null
-        /tmp/rbackup.sh -i > /dev/null
+        chmod +x /tmp/zbackup.sh > /dev/null
+        /tmp/zbackup.sh -i > /dev/null
     fi
 }
 
@@ -273,4 +280,3 @@ do
                   ;;
         esac
 done
-
