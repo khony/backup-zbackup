@@ -83,7 +83,7 @@ function list_backups {
     IFS=$SAVEIFS
 }
 
-function backup_sql {
+function backup_mysql {
     #MYSQL BACKUP
     if [ ! `whoami` == "zimbra" ];then
         echo "Not zimbra user"
@@ -146,7 +146,7 @@ function do_backup {
     fi
     #check if force umount
     if [ "$forceumount" == "y" ];then
-        umount $dest
+        umount $dest 2> /dev/null
         sleep 10
     fi
     #before
