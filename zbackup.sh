@@ -91,9 +91,9 @@ function backup_mysql {
     fi
     source ~/bin/zmshutil
     zmsetvars 
-    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > $dest/mysql_$day.sql
-    cd $dest/
-    gzip -f $dest/mysql_$day.sql
+    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > /tmp/mysql.sql
+    cd /tmp/
+    gzip -f /tmp/mysql.sql
 }
 
 function backup_ldap {
@@ -102,11 +102,8 @@ function backup_ldap {
         exit 2;
     fi
     #LDAP BACKUP
-    /opt/zimbra/libexec/zmslapcat -c /tmp/ldap.$day 
-    mv /tmp/ldap.$day/ldap-config.bak $dest/ldap-config.$day.bak
-    /opt/zimbra/libexec/zmslapcat /tmp/ldap.$day
-    mv /tmp/ldap.$day/ldap.bak $dest/ldap.$day.bak 
-    rm -rf /tmp/ldap.$day
+    /opt/zimbra/libexec/zmslapcat -c /tmp/ldap
+    /opt/zimbra/libexec/zmslapcat /tmp/ldap
 }
 
 function reset_variables {
@@ -200,7 +197,10 @@ function do_backup {
     fi
 
     su - zimbra -c "/usr/bin/zbackup -a"
-
+    mv /tmp/mysql.sql.gz $dest/mysql.$day.gz
+    mv /tmp/ldap/ldap-config.bak $dest/ldap-config.$day.bak
+    mv /tmp/ldap/ldap.bak $dest/ldap.$day.bak 
+    rm -rf /tmp/ldap.$day
     #umount after backup
     if [ ! -z ${ext_ids+x} ];then 
         sleep 7
