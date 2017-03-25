@@ -83,6 +83,32 @@ function list_backups {
     IFS=$SAVEIFS
 }
 
+function backup_sql {
+    #MYSQL BACKUP
+    if [ ! `whoami` == "zimbra" ];then
+        echo "Not zimbra user"
+        exit 2;
+    fi
+    source ~/bin/zmshutil
+    zmsetvars 
+    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > $dest/mysql_$day.sql
+    cd $dest/
+    gzip -f $dest/mysql_$day.sql
+}
+
+function backup_ldap {
+    if [ ! `whoami` == "zimbra" ];then
+        echo "Not zimbra user"
+        exit 2;
+    fi
+    #LDAP BACKUP
+    /opt/zimbra/libexec/zmslapcat -c /tmp/ldap.$day 
+    mv /tmp/ldap.$day/ldap-config.bak $dest/ldap-config.$day.bak
+    /opt/zimbra/libexec/zmslapcat /tmp/ldap.$day
+    mv /tmp/ldap.$day/ldap.bak $dest/ldap.$day.bak 
+    rm -rf /tmp/ldap.$day
+}
+
 function reset_variables {
     unset mail
     unset name
@@ -173,13 +199,7 @@ function do_backup {
         su - zimbra -c "/usr/bin/zmbkpose -i"
     fi
 
-    #MYSQL BACKUP
-    su - zimbra -c "source ~/bin/zmshutil && zmsetvars && /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > $dest/mysql_$day.sql"
-    su - zimbra -c "cd $dest/ && gzip $dest/mysql_$day.sql"
-
-    #LDAP BACKUP
-    su - zimbra -c "/opt/zimbra/libexec/zmslapcat -c /tmp/ldap.$day && mv /tmp/ldap.$day/ldap-config.bak $dest/ldap-config.$day.bak"
-    su - zimbra -c "/opt/zimbra/libexec/zmslapcat /tmp/ldap.$day && mv /tmp/ldap.$day/ldap.bak $dest/ldap.$day.bak && rm -rf /tmp/ldap.$day"
+    su - zimbra -c "/usr/bin/zbackup -a"
 
     #umount after backup
     if [ ! -z ${ext_ids+x} ];then 
@@ -238,10 +258,15 @@ function execute_backup {
     IFS=$SAVEIFS
 }
 
-while getopts zeilhs:c:d: option
+while getopts zeailhs:c:d: option
 do
         case "${option}"
         in
+                a) # backup mysql and ldap
+                  backup_mysql
+                  backup_ldap
+                  exit 0
+                  ;;
                 z) # zabbix auto discovery
                   zabbix_auto_discovery
                   exit 0
