@@ -84,6 +84,7 @@ function list_backups {
 }
 
 function backup_mysql {
+    source $1
     #MYSQL BACKUP
     if [ ! `whoami` == "zimbra" ];then
         echo "Not zimbra user"
@@ -91,19 +92,21 @@ function backup_mysql {
     fi
     source ~/bin/zmshutil
     zmsetvars 
-    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > /tmp/mysql.sql
-    cd /tmp/
-    gzip -f /tmp/mysql.sql
+    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > $dest/mysql.$day.sql
+    gzip -f /tmp/mysql.$day.sql
 }
 
 function backup_ldap {
+    source $1
+    day=`date +%w`
     if [ ! `whoami` == "zimbra" ];then
         echo "Not zimbra user"
         exit 2;
     fi
     #LDAP BACKUP
-    /opt/zimbra/libexec/zmslapcat -c /tmp/ldap
-    /opt/zimbra/libexec/zmslapcat /tmp/ldap
+    rm -rf $dest/ldap.$day
+    /opt/zimbra/libexec/zmslapcat -c $dest/ldap.$day
+    /opt/zimbra/libexec/zmslapcat $dest/ldap.$day
 }
 
 function reset_variables {
@@ -196,11 +199,8 @@ function do_backup {
         su - zimbra -c "/usr/bin/zmbkpose -i"
     fi
 
-    su - zimbra -c "/usr/bin/zbackup -a"
-    mv /tmp/mysql.sql.gz $dest/mysql.$day.gz
-    mv /tmp/ldap/ldap-config.bak $dest/ldap-config.$day.bak
-    mv /tmp/ldap/ldap.bak $dest/ldap.$day.bak 
-    rm -rf /tmp/ldap.$day
+    su - zimbra -c "/usr/bin/zbackup -a $1"
+
     #umount after backup
     if [ ! -z ${ext_ids+x} ];then 
         sleep 7
@@ -258,13 +258,13 @@ function execute_backup {
     IFS=$SAVEIFS
 }
 
-while getopts zeailhs:c:d: option
+while getopts zeilha:s:c:d: option
 do
         case "${option}"
         in
                 a) # backup mysql and ldap
-                  backup_mysql
-                  backup_ldap
+                  backup_mysql ${OPTARGS}
+                  backup_ldap ${OPTARGS}
                   exit 0
                   ;;
                 z) # zabbix auto discovery
