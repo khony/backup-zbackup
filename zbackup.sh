@@ -90,10 +90,11 @@ function backup_mysql {
         echo "Not zimbra user"
         exit 2;
     fi
+    day=`date +%w`
     source ~/bin/zmshutil
     zmsetvars 
-    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > $dest/mysql.$day.sql
-    gzip -f /tmp/mysql.$day.sql
+    /opt/zimbra/common/bin/mysqldump --user=root --password=$mysql_root_password --socket=$mysql_socket --all-databases --single-transaction --flush-logs > $dest/mysql_$day.sql
+    gzip -f $dest/mysql_$day.sql
 }
 
 function backup_ldap {
@@ -263,8 +264,9 @@ do
         case "${option}"
         in
                 a) # backup mysql and ldap
-                  backup_mysql ${OPTARGS}
-                  backup_ldap ${OPTARGS}
+                  echo "Doing MYSQL and LDAP Backup using ${OPTARG}"
+                  backup_mysql ${OPTARG}
+                  backup_ldap ${OPTARG}
                   exit 0
                   ;;
                 z) # zabbix auto discovery
