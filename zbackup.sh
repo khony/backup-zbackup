@@ -30,6 +30,14 @@ function _check_dependencies {
     fi
 }
 
+function send_mail {
+    echo "From: $mail_from" > /tmp/mail.txt
+    echo "Subject: $1" >> /tmp/mail.txt
+    echo "" > /tmp/mail.txt
+    cat $log_file >> /tmp/mail.txt
+    /opt/zimbra/common/sbin/sendmail $mail < /tmp/mail.txt
+}
+
 function install_zbackup {
     echo "Installing at /usr/bin"
     cp -f $0 /usr/bin/zbackup.sh
@@ -129,6 +137,9 @@ function do_backup {
     #set variables
     reset_variables
     source $1
+    export mail
+    export mail_from
+    export dest
     routine=`echo $1 | rev | cut -d'/' -f 1 | rev`
     log_file="/tmp/$routine.log"
     #check dependencies
@@ -141,7 +152,7 @@ function do_backup {
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Init backup $routine" > $log_file
     else
         if [ ! -z ${mail+x} ];then 
-            echo "Backup Zimbra already running @ $(date +%d/%m/%Y) - $(date +%H:%M)" | mail -s "Backup Zimbra ($name/Already running)" $mail
+            echo -e "From: $mail_from\nSubject: Backup Zimbra ($name/Already running)\n\nBackup Zimbra already running @ $(date +%d/%m/%Y) - $(date +%H:%M)" | /opt/zimbra/common/sbin/sendmail $mail
         fi
         exit 0
     fi
@@ -156,7 +167,7 @@ function do_backup {
         if [ ! $? -eq 0 ]; then
              echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Error executing before command" >> $log_file 
              if [ ! -z ${mail+x} ];then 
-                cat $log_file | mail -s "Backup Zimbra ($name/Error)" $mail
+                send_mail "Backup Zimbra ($name/Error)"
              fi
              echo "$(date +%s),999" > /usr/share/zbackup/$routine
              exit 0
@@ -186,21 +197,34 @@ function do_backup {
     
     #delete
     if [ ! -z ${history+x} ];then
+      echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Deleting OLD Backups" >> $log_file
       su - zimbra -c "/usr/bin/zmbkpose -d $history"
     fi
 
     #check if full or incremental and do ACCOUNTS BACKUP
     day=`date +%w`
+    testMYSQLANDLDAP=0
     if [[ " ${full[*]} " == *" $day "* ]]; then
         #full
+        echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing FULL backup" >> $log_file
         su - zimbra -c "/usr/bin/zmbkpose -f"
+        testMYSQLANDLDAP=1
     fi
     if [[ " ${incremental[*]} " == *" $day "* ]]; then
         #incremental
+        echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing INCREMENTAL backup" >> $log_file
         su - zimbra -c "/usr/bin/zmbkpose -i"
+        testMYSQLANDLDAP=1
     fi
 
-    su - zimbra -c "/usr/bin/zbackup -a $1"
+    if [ "$testMYSQLANDLDAP" == "1" ];then
+        echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing MYSQL and LDAP backup" >> $log_file
+        su - zimbra -c "/usr/bin/zbackup -a $1"
+    else
+        echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Error, without full or incremental backup" >> $log_file
+        echo "$(date +%s),9992" > /usr/share/zbackup/$routine
+        exit 1
+    fi
 
     #umount after backup
     if [ ! -z ${ext_ids+x} ];then 
@@ -215,7 +239,7 @@ function do_backup {
         if [ ! $? -eq 0 ]; then
              echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Error executing after command" >> $log_file 
              if [ ! -z ${mail+x} ];then 
-                cat $log_file | mail -s "Backup Zimbra ($name/Error)" $mail
+                send_mail "Backup Zimbra ($name/Error)"
              fi
              echo "$(date +%s),9992" > /usr/share/zbackup/$routine
              exit 0
@@ -239,7 +263,7 @@ function do_backup {
     #send e-mail
     if [ ! -z ${mail+x} ];then
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Sending e-mail" >> $log_file
-        cat $log_file | mail -s "Backup ($name/$status)" $mail
+        send_mail "Backup ($name/$status)"
     fi
 
     #auto-update
@@ -264,7 +288,6 @@ do
         case "${option}"
         in
                 a) # backup mysql and ldap
-                  echo "Doing MYSQL and LDAP Backup using ${OPTARG}"
                   backup_mysql ${OPTARG}
                   backup_ldap ${OPTARG}
                   exit 0
