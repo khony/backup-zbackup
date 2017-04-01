@@ -33,7 +33,7 @@ function _check_dependencies {
 function send_mail {
     echo "From: $mail_from" > /tmp/mail.txt
     echo "Subject: $1" >> /tmp/mail.txt
-    echo "" > /tmp/mail.txt
+    echo "" >> /tmp/mail.txt
     cat $log_file >> /tmp/mail.txt
     /opt/zimbra/common/sbin/sendmail $mail < /tmp/mail.txt
 }
