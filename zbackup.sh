@@ -20,13 +20,10 @@ function _help {
 
 function _check_dependencies {
     #check zmbkpose
-    if [ ! -f "/usr/bin/zmbkpose" ];then
+    if [ ! -f "/usr/local/bin/zmbackup" ];then
         #check git
-        git clone https://github.com/bggo/Zmbkpose.git /tmp/zmbkpose
-        cd /tmp/zmbkpose
-        chmod +x install.sh
-        ./install.sh
-        exit 0
+	echo "PLEASE INSTALL ZMBACKUP"
+        exit 1
     fi
 }
 
@@ -195,25 +192,28 @@ function do_backup {
         fi
     fi
     
-    #delete
-    if [ ! -z ${history+x} ];then
-      echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Deleting OLD Backups" >> $log_file
-      su - zimbra -c "/usr/bin/zmbkpose -d $history"
-    fi
-
+    echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Cleaning the house" >> $log_file  
+    su - zimbra -c "/usr/local/bin/zmbhousekeep"
+   
     #check if full or incremental and do ACCOUNTS BACKUP
     day=`date +%w`
     testMYSQLANDLDAP=0
     if [[ " ${full[*]} " == *" $day "* ]]; then
         #full
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing FULL backup" >> $log_file
-        su - zimbra -c "/usr/bin/zmbkpose -f"
+        su - zimbra -c "/usr/local/bin/zmbackup -f"
+        zmbkposestatus=`echo $?`
+        sleep 60
+        su - zimbra -c "/usr/local/bin/zmbackup -f -dl"
+        sleep 60
+        su - zimbra -c "/usr/local/bin/zmbackup -f -al"
         testMYSQLANDLDAP=1
     fi
     if [[ " ${incremental[*]} " == *" $day "* ]]; then
         #incremental
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing INCREMENTAL backup" >> $log_file
-        su - zimbra -c "/usr/bin/zmbkpose -i"
+        su - zimbra -c "/usr/local/bin/zmbackup -i"
+        zmbkposestatus=`echo $?`
         testMYSQLANDLDAP=1
     fi
 
@@ -263,7 +263,7 @@ function do_backup {
     #send e-mail
     if [ ! -z ${mail+x} ];then
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Sending e-mail" >> $log_file
-        send_mail "Backup ($name/$status)"
+        send_mail "Backup Zimbra ($name/$status)"
     fi
 
     #auto-update
