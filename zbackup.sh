@@ -213,14 +213,14 @@ function do_backup {
     if [[ " ${incremental[*]} " == *" $day "* ]]; then
         #incremental
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing INCREMENTAL backup" >> $log_file
-        su - zimbra -c "/usr/local/bin/zmbackup -i"
+        su - zimbra -c "/usr/local/bin/zmbackup -i" >> $log_file
         zmbkposestatus=`echo $?`
         testMYSQLANDLDAP=1
     fi
 
     if [ "$testMYSQLANDLDAP" == "1" ];then
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing MYSQL and LDAP backup" >> $log_file
-        su - zimbra -c "/usr/bin/zbackup -a $1"
+        su - zimbra -c "/usr/bin/zbackup -a $1" >> $log_file
     else
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Error, without full or incremental backup" >> $log_file
         echo "$(date +%s),9992" > /usr/share/zbackup/$routine
