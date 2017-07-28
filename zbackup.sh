@@ -28,11 +28,12 @@ function _check_dependencies {
 }
 
 function send_mail {
-    echo "From: $mail_from" > /tmp/mail.txt
-    echo "Subject: $1" >> /tmp/mail.txt
-    echo "" >> /tmp/mail.txt
-    cat $log_file >> /tmp/mail.txt
-    /opt/zimbra/common/sbin/sendmail $mail < /tmp/mail.txt
+    echo "From: $mail_from" > /tmp/e_mail.txt
+    echo "Subject: $1" >> /tmp/e_mail.txt
+    echo "" >> /tmp/e_mail.txt
+    cat $log_file >> /tmp/e_mail.txt
+    /opt/zimbra/common/sbin/sendmail $mail < /tmp/e_mail.txt
+    rm -f /tmp/e_mail.txt
 }
 
 function install_zbackup {
