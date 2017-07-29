@@ -202,12 +202,12 @@ function do_backup {
     if [[ " ${full[*]} " == *" $day "* ]]; then
         #full
         echo "$(date +%d/%m/%Y) - $(date +%H:%M) @ Doing FULL backup" >> $log_file
-        su - zimbra -c "/usr/local/bin/zmbackup -f"
+        su - zimbra -c "/usr/local/bin/zmbackup -f" >> $log_file
         zmbkposestatus=`echo $?`
         sleep 60
-        su - zimbra -c "/usr/local/bin/zmbackup -f -dl"
+        su - zimbra -c "/usr/local/bin/zmbackup -f -dl" >> $log_file
         sleep 60
-        su - zimbra -c "/usr/local/bin/zmbackup -f -al"
+        su - zimbra -c "/usr/local/bin/zmbackup -f -al" >> $log_file
         testMYSQLANDLDAP=1
     fi
     if [[ " ${incremental[*]} " == *" $day "* ]]; then
